@@ -9,13 +9,16 @@ project(
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_executable(
     telemetry
     src/main.cpp
+    src/TelemetryMessage.cpp
 )
 
 target_include_directories(
     telemetry
-    PRIVATE include
+    PRIVATE
+    ${PROJECT_SOURCE_DIR}/include
 )
