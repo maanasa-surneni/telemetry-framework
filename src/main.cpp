@@ -1,36 +1,24 @@
 #include <iostream>
 #include "TelemetryMessage.hpp"
+#include "SensorSimulator.hpp"
 
 int main()
 {
-    //from the class TelemetryMessage, it creates an object called message
-    TelemetryMessage validMessage(
-        "sensor-01",
-        1720560000,
-        24.7,
-        91
-    );
+    SensorSimulator simulator("sensor-01");
 
-    validMessage.print();
+    for (int i{0}; i<5; ++i){
+        TelemetryMessage message = simulator.generateMessage();
 
-    if (validMessage.isValid()){
-        std::cout << "Message is valid" << std::endl;
-    } else {
-        std::cout << "Message is invalid" << std::endl;
+        message.print();
+
+        if (message.isValid()){
+            std::cout << "Message is valid." << std::endl;
+        } else {
+            std::cout << "Message is invalid." << std::endl;
+        }
+        std::cout << std::endl;
     }
 
-    TelemetryMessage invalidMessage(
-        "",
-        -1,
-        500.0,
-        120
-    );
-
-    if (invalidMessage.isValid()){
-        std::cout << "Second message is valid." << std::endl;
-    } else {
-        std::cout << "Second message is invalid." << std::endl;
-    }
 
     return 0;
 

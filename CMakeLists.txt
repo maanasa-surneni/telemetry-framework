@@ -15,6 +15,7 @@ add_executable(
     telemetry
     src/main.cpp
     src/TelemetryMessage.cpp
+    src/SensorSimulator.cpp
 )
 
 target_include_directories(

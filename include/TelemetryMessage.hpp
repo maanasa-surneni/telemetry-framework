@@ -18,6 +18,11 @@ class TelemetryMessage {
         void print() const;
         bool isValid() const;
 
+        const std::string& getDeviceId() const;
+        std::int64_t getTimeStamp() const;
+        double getTemperature() const;
+        int getBatteryPercentage() const;
+
     private: //data stored inside the object (all the values listed under are objects)
         std::string deviceId_;
         std::int64_t timestamp_;

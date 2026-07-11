@@ -47,3 +47,21 @@ bool TelemetryMessage::isValid() const
 
     return true;
 }
+
+//use std::string& since the value can be relatively large; so returning a const reference avoids making a copy of the string
+const std::string& TelemetryMessage::getDeviceId() const{
+    return deviceId_;
+}
+
+//std::int64_t is an int type that stores 64-bit signed integers (its guaranteed to be exactly 64 bits regardless of the os or compiler)
+std::int64_t TelemetryMessage::getTimeStamp() const{
+    return timestamp_;
+}
+
+double TelemetryMessage::getTemperature() const{
+    return temperature_;
+}
+
+int TelemetryMessage::getBatteryPercentage() const{
+    return batteryPercentage_;
+}
