@@ -2,10 +2,12 @@
 #include <vector>
 
 #include "SensorSimulator.hpp"
+#include "TelemetryProcessor.hpp"
 
 int main()
 {
     SensorSimulator simulator("sensor-01");
+    TelemetryProcessor processor;
 
     //creates an initially empty collection that can hold many TelemetryMessage objects
     std::vector<TelemetryMessage> messages;
@@ -21,7 +23,7 @@ int main()
         }
     }
 
-    std::cout << "Store messages: " << messages.size() << std::endl;
+    std::cout << "Stored messages: " << messages.size() << std::endl;
 
     //loops through every message in the vector
     for (const TelemetryMessage& message : messages){
@@ -29,6 +31,13 @@ int main()
         std::cout << std::endl;
     }
 
-    return 0;
+    if (!messages.empty()){
+        std::cout << "Telemetry statistics" << std::endl;
+        std::cout << "Average temperature: " << processor.calculateAverageTemperature(messages) << " C" << std::endl;
+        std::cout << "Minimum temperature: " << processor.findMinimumTemperature(messages) << " C" << std::endl;
+        std::cout << "Maximum temperature: " << processor.findMaximumTemperature(messages) << " C" << std::endl;
+        std::cout << "Average battery: " << processor.calculateAverageBattery(messages) << " %" << std::endl;
+    }
 
+    return 0;
 }
