@@ -18,6 +18,7 @@ add_library(
     src/SensorSimulator.cpp
     src/TelemetryProcessor.cpp
     src/CsvExporter.cpp
+    src/TelemetryQueue.cpp
 )
 
 target_include_directories(

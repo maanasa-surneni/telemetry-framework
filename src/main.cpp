@@ -2,44 +2,29 @@
 #include <vector>
 
 #include "SensorSimulator.hpp"
-#include "TelemetryProcessor.hpp"
-#include "CsvExporter.hpp"
+#include "TelemetryQueue.hpp"
 
 int main()
 {
     SensorSimulator simulator("sensor-01");
-    TelemetryProcessor processor;
-    CsvExporter exporter;
+    TelemetryQueue queue;
 
-    //creates an initially empty collection that can hold many TelemetryMessage objects
-    std::vector<TelemetryMessage> messages;
-
-    for (int i{0}; i<10; ++i){
+    for (int i{0}; i<5; ++i){
         TelemetryMessage message = simulator.generateMessage();
 
         if (message.isValid()){
-            //the push_back adds a message to the end of the vector
-            messages.push_back(message);
-        } else {
-            std::cout << "Invalid message rejected." << std::endl;
+            queue.push(message);
         }
     }
 
-    std::cout << "Stored messages: " << messages.size() << std::endl;
+    std::cout << "Queue contains " << queue.size() << " messages." << std::endl;
 
-    if (!messages.empty()){
-        std::cout << "Telemetry statistics" << std::endl;
-        std::cout << "Average temperature: " << processor.calculateAverageTemperature(messages) << " C" << std::endl;
-        std::cout << "Minimum temperature: " << processor.findMinimumTemperature(messages) << " C" << std::endl;
-        std::cout << "Maximum temperature: " << processor.findMaximumTemperature(messages) << " C" << std::endl;
-        std::cout << "Average battery: " << processor.calculateAverageBattery(messages) << " %" << std::endl;
+    while (!queue.empty()){
+        TelemetryMessage message = queue.pop();
 
-        exporter.exportMessages(
-            messages,
-            "telemetry_data.csv"
-        );
+        message.print();
 
-        std::cout << "Telemetry exported to telemetry_data.csv" << std::endl;
+        std::cout << "Message remaining: " << queue.size() << std::endl;
     }
 
     return 0;
