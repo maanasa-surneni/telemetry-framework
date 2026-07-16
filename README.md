@@ -1,2 +1,2 @@
 # telemetry-framework
-A real-time telemetry processing framework for generating, parsing, buffering, and exporting simulated device data.
+A real-time telemetry processing framework for generating and exporting simulated device data.

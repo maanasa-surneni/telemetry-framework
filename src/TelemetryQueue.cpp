@@ -2,28 +2,48 @@
 
 #include <stdexcept>
 
-void TelemetryQueue::push(const TelemetryMessage& message) {
-    //adds a copy of the message to the back of the internal queue
-    messages_.push(message);
-}
-
-TelemetryMessage TelemetryQueue::pop(){
-    if (messages_.empty()){
-        throw std::runtime_error(
-            "Cannot delete from an empty telemetry queue."
+TelemetryQueue::TelemetryQueue(std::size_t capacity) 
+    : capacity_(capacity) {
+    if (capacity == 0){
+        throw std::invalid_argument(
+            "TelemetryQueue capacity must be greater than zero"
         );
     }
-    //copies the oldest message into a local variable using front() which looks at the first item
-    TelemetryMessage message = messages_.front();
-    messages_.pop(); //removes the first item from the queue
+}
 
-    return message;
+bool TelemetryQueue::tryPush(const TelemetryMessage& message) {
+
+    //locks the mutex when created and automatically unlocks it when the function exits
+    std::lock_guard<std::mutex> lock(mutex_);
+
+    if (queue_.size() >= capacity_) {
+        return false;
+    }
+
+    //adds a copy of the message to the back of the internal queue
+    queue_.push(message);
+    return true;
+}
+
+bool TelemetryQueue::tryPop(TelemetryMessage& message){
+    std::lock_guard<std::mutex> lock(mutex_);
+
+    if (queue_.empty()){
+        return false;
+    }
+    //copies the oldest message into the caller-provided object
+    message = queue_.front();
+    queue_.pop(); //removes the first item from the queue
+
+    return true;
 }
 
 bool TelemetryQueue::empty() const{
-    return messages_.empty();
+    std::lock_guard<std::mutex> lock(mutex_);
+    return queue_.empty();
 }
 
 std::size_t TelemetryQueue::size() const{
-    return messages_.size();
+    std::lock_guard<std::mutex> lock(mutex_);
+    return queue_.size();
 }
