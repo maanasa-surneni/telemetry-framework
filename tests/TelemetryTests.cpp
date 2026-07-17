@@ -3,6 +3,8 @@
 #include "TelemetryQueue.hpp"
 
 #include <gtest/gtest.h>
+#include <chrono>
+#include <thread>
 
 
 TEST(TelemetryQueueTest, NewQueueIsEmpty){
@@ -96,4 +98,45 @@ TEST(TelemetryQueueTest, TryPushReturnsFalseWhenQueueIsFull) {
     ));
 
     EXPECT_EQ(queue.size(), 2);
+}
+
+TEST(TelemetryQueueTest, WaitPopReceivesMessageFromProducer) {
+    TelemetryQueue queue(5);
+
+    TelemetryMessage result("placeholder", 0, 0.0, 0);
+
+    std::thread producer([&queue] {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+        queue.waitPush(
+            TelemetryMessage("sensor-01", 1000, 25.0, 90)
+        );
+    });
+
+    bool popped = queue.waitPop(result);
+
+    producer.join();
+
+    ASSERT_TRUE(popped);
+    EXPECT_EQ(result.getDeviceId(), "sensor-01");
+    EXPECT_DOUBLE_EQ(result.getTemperature(), 25.0);
+    EXPECT_EQ(result.getBatteryPercentage(), 90);
+}
+
+TEST(TelemetryQueueTest, StopWakesWaitingConsumer) {
+    TelemetryQueue queue(5);
+
+    TelemetryMessage result("placeholder", 0, 0.0, 0);
+    bool popped = true;
+
+    std::thread consumer([&] {
+        popped = queue.waitPop(result);
+    });
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+    queue.stop();
+    consumer.join();
+
+    EXPECT_FALSE(popped);
 }
