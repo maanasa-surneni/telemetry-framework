@@ -19,6 +19,7 @@ add_library(
     src/TelemetryProcessor.cpp
     src/CsvExporter.cpp
     src/TelemetryQueue.cpp
+    src/TelemetryAlert.cpp
 )
 
 target_include_directories(

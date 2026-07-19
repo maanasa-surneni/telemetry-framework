@@ -5,6 +5,8 @@
 #include "SensorSimulator.hpp"
 #include "TelemetryQueue.hpp"
 #include "TelemetryProcessor.hpp"
+#include "CsvExporter.hpp"
+#include "TelemetryAlert.hpp"
 
 int main()
 {
@@ -14,8 +16,14 @@ int main()
 
     // The queue can store up to 10 messages.
     TelemetryQueue queue(10);
-
     TelemetryProcessor processor;
+    CsvExporter exporter("telemetry.csv");
+    TelemetryAlert alertSystem(28.0, 20);
+
+    if (!exporter.isOpen()) {
+        std::cerr << "Failed to open telemetry.csv" << std::endl;
+        return 1;
+    }
 
     constexpr int messagesPerSensor{10};
 
@@ -76,7 +84,13 @@ int main()
     std::thread consumer([&] {
         while (queue.waitPop(output)) {
             processor.process(output); //every consumed message is passed into this
-            output.print();
+            exporter.write(output);
+            
+            const std::string alert = alertSystem.createAlertMessage(output);
+
+            if (!alert.empty()) {
+                std::cout << "ALERT: " << alert << std::endl;
+            }
         }
 
         std::cout << "Consumer finished processing messages." << std::endl;

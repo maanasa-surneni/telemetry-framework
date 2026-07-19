@@ -1,6 +1,8 @@
 #include "TelemetryMessage.hpp"
 #include "TelemetryProcessor.hpp"
 #include "TelemetryQueue.hpp"
+#include "CsvExporter.hpp"
+#include "TelemetryAlert.hpp"
 
 #include <gtest/gtest.h>
 #include <chrono>
@@ -299,4 +301,88 @@ TEST(TelemetryProcessorTest, TracksDevicesSeparately)
     );
 
     EXPECT_EQ(processor.getProcessedCount(), 3);
+}
+
+TEST(CsvExporterTest, WritesMessageToFile) {
+    const std::string filename = "test_telemetry.csv";
+
+    {
+        CsvExporter exporter(filename);
+        ASSERT_TRUE(exporter.isOpen());
+
+        TelemetryMessage message(
+            "sensor-01",
+            1000,
+            25.5,
+            90
+        );
+
+        exporter.write(message);
+    }
+
+    std::ifstream file(filename);
+
+    ASSERT_TRUE(file.is_open());
+
+    std::string header;
+    std::string row;
+
+    std::getline(file, header);
+    std::getline(file, row);
+
+    EXPECT_EQ(header, "device_id,timestamp,temperature,battery_percentage");
+
+    EXPECT_EQ(row, "sensor-01,1000,25.5,90");
+
+    std::remove(filename.c_str());
+}
+
+TEST(TelemetryAlertTest, DetectsHighTemp) {
+    TelemetryAlert alertSystem(28.0, 20);
+
+    TelemetryMessage message(
+        "sensor-01",
+        1000,
+        30.0,
+        90
+    );
+
+    EXPECT_TRUE(alertSystem.hasHighTemp(message));
+
+    EXPECT_FALSE(alertSystem.hasLowBattery(message));
+}
+
+TEST(TelemetryAlertTest, DetectsLowBattery) {
+    TelemetryAlert alertSystem(28.0, 20);
+
+    TelemetryMessage message(
+        "sensor-01",
+        1000,
+        25.0,
+        10
+    );
+
+    EXPECT_FALSE(
+        alertSystem.hasHighTemp(message)
+    );
+
+    EXPECT_TRUE(
+        alertSystem.hasLowBattery(message)
+    );
+}
+
+TEST(TelemetryAlertTest, CreatesCombinedAlert) {
+    TelemetryAlert alertSystem(28.0, 20);
+
+    TelemetryMessage message(
+        "sensor-01",
+        1000,
+        30.0,
+        10
+    );
+
+    const std::string alert =
+        alertSystem.createAlertMessage(message);
+
+    EXPECT_FALSE(alert.empty());
 }
