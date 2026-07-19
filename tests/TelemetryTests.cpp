@@ -7,6 +7,8 @@
 #include <gtest/gtest.h>
 #include <chrono>
 #include <thread>
+#include <string>
+#include <vector>
 
 
 TEST(TelemetryQueueTest, NewQueueIsEmpty){
@@ -385,4 +387,94 @@ TEST(TelemetryAlertTest, CreatesCombinedAlert) {
         alertSystem.createAlertMessage(message);
 
     EXPECT_FALSE(alert.empty());
+}
+
+TEST(TelemetryPipelineTest, ProcessesLargeNumberOfMessages)
+{
+    TelemetryQueue queue(100);
+    TelemetryProcessor processor;
+
+    constexpr int producerCount{4};
+    constexpr int messagesPerProducer{10000};
+
+    const auto start = std::chrono::steady_clock::now();
+
+    //stores multiple producer threads in one container
+    std::vector<std::thread> producers;
+
+    TelemetryMessage output(
+        "placeholder",
+        0,
+        0.0,
+        0
+    );
+
+    std::thread consumer([&] {
+        while (queue.waitPop(output)) {
+            processor.process(output);
+        }
+    });
+
+    for (int producerIndex{0};
+         producerIndex < producerCount;
+         ++producerIndex) {
+
+        //creates a new thread directly inside the vector (each loop iteration creates one producer)
+        producers.emplace_back([&, producerIndex] {
+            const std::string deviceId =
+                "sensor-" + std::to_string(producerIndex);
+
+            for (int i{0};
+                 i < messagesPerProducer;
+                 ++i) {
+
+                TelemetryMessage message(
+                    deviceId,
+                    i,
+                    25.0,
+                    90
+                );
+
+                if (!queue.waitPush(message)) {
+                    return;
+                }
+            }
+        });
+    }
+
+    for (std::thread& producer : producers) {
+        producer.join();
+    }
+
+    queue.stop();
+    consumer.join();
+
+    const auto end = std::chrono::steady_clock::now();
+
+    const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+        end - start
+    );
+
+    const std::size_t expectedCount =
+        producerCount * messagesPerProducer;
+
+    std::cout << "Processed "
+              << expectedCount
+              << " message in "
+              << elapsed.count()
+              << " ms" << std::endl;
+    
+    if (elapsed.count() > 0) {
+        const double seconds = elapsed.count() / 1000.0;
+        const double throughput = expectedCount / seconds;
+
+        std::cout << "Throughput: "
+                  << throughput
+                  << " messages/second" << std::endl;
+    }
+
+    EXPECT_EQ(
+        processor.getProcessedCount(),
+        expectedCount
+    );
 }
