@@ -231,3 +231,72 @@ TEST(TelemetryProcessorTest, CountsInvalidMessage)
     EXPECT_EQ(processor.getProcessedCount(), 0);
     EXPECT_EQ(processor.getInvalidCount(), 1);
 }
+
+TEST(TelemetryProcessorTest, TracksStatisticsForOneDevice)
+{
+    TelemetryProcessor processor;
+
+    processor.process(
+        TelemetryMessage("sensor-01", 1000, 20.0, 90)
+    );
+
+    processor.process(
+        TelemetryMessage("sensor-01", 1001, 30.0, 89)
+    );
+
+    EXPECT_TRUE(processor.hasDevice("sensor-01"));
+
+    const DeviceStatistics& statistics =
+        processor.getDeviceStatistics("sensor-01");
+
+    EXPECT_EQ(statistics.processedCount, 2);
+    EXPECT_DOUBLE_EQ(statistics.minTemp, 20.0);
+    EXPECT_DOUBLE_EQ(statistics.maxTemp, 30.0);
+
+    EXPECT_DOUBLE_EQ(
+        processor.getDeviceAverageTemp("sensor-01"),
+        25.0
+    );
+}
+
+TEST(TelemetryProcessorTest, TracksDevicesSeparately)
+{
+    TelemetryProcessor processor;
+
+    processor.process(
+        TelemetryMessage("sensor-01", 1000, 20.0, 90)
+    );
+
+    processor.process(
+        TelemetryMessage("sensor-01", 1001, 30.0, 89)
+    );
+
+    processor.process(
+        TelemetryMessage("sensor-02", 1002, 40.0, 88)
+    );
+
+    EXPECT_TRUE(processor.hasDevice("sensor-01"));
+    EXPECT_TRUE(processor.hasDevice("sensor-02"));
+    EXPECT_FALSE(processor.hasDevice("sensor-03"));
+
+    const DeviceStatistics& sensorOne =
+        processor.getDeviceStatistics("sensor-01");
+
+    const DeviceStatistics& sensorTwo =
+        processor.getDeviceStatistics("sensor-02");
+
+    EXPECT_EQ(sensorOne.processedCount, 2);
+    EXPECT_EQ(sensorTwo.processedCount, 1);
+
+    EXPECT_DOUBLE_EQ(
+        processor.getDeviceAverageTemp("sensor-01"),
+        25.0
+    );
+
+    EXPECT_DOUBLE_EQ(
+        processor.getDeviceAverageTemp("sensor-02"),
+        40.0
+    );
+
+    EXPECT_EQ(processor.getProcessedCount(), 3);
+}

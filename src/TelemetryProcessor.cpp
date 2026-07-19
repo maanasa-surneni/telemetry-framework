@@ -36,6 +36,24 @@ void TelemetryProcessor::process(const TelemetryMessage& message) {
 
     tempSum_ += temp;
     ++processedCount_;
+
+    DeviceStatistics& statistics = deviceStatistics_[message.getDeviceId()];
+
+    if (statistics.processedCount == 0) {
+        statistics.minTemp = temp;
+        statistics.maxTemp = temp;
+    } else {
+        if (temp < statistics.minTemp) {
+            statistics.minTemp = temp;
+        }
+
+        if (temp > statistics.maxTemp) {
+            statistics.maxTemp = temp;
+        }
+    }
+
+    statistics.tempSum += temp;
+    ++statistics.processedCount;
 }
 
 std::size_t TelemetryProcessor::getProcessedCount() const {
@@ -60,4 +78,22 @@ double TelemetryProcessor::getMinTemp() const {
 
 double TelemetryProcessor::getMaxTemp() const {
     return maxTemp_;
+}
+
+bool TelemetryProcessor::hasDevice(const std::string& deviceId) const {
+    return deviceStatistics_.find(deviceId) != deviceStatistics_.end();
+}
+
+const DeviceStatistics& TelemetryProcessor::getDeviceStatistics(const std::string& deviceId) const {
+    return deviceStatistics_.at(deviceId); //the .at() function looks up an existing entry
+}
+
+double TelemetryProcessor::getDeviceAverageTemp(const std::string& deviceId) const {
+    const DeviceStatistics& statistics = deviceStatistics_.at(deviceId);
+
+    if (statistics.processedCount == 0) {
+        return 0.0;
+    }
+
+    return statistics.tempSum / static_cast<double>(statistics.processedCount);
 }
