@@ -1,4 +1,6 @@
 #include <iostream>
+#include <chrono>
+#include <thread>
 
 #include "SensorSimulator.hpp"
 #include "TelemetryQueue.hpp"
@@ -8,35 +10,49 @@ int main()
     SensorSimulator simulator("sensor-01");
 
     // The queue can store up to 10 messages.
-    TelemetryQueue queue(10);
+    TelemetryQueue queue(2);
 
-    // TelemetryMessage has no default constructor, so create it using the simulator.
-    TelemetryMessage message = simulator.generateMessage();
+    constexpr int messageCount{10};
 
-    for (int i{0}; i < 5; ++i) {
-        message = simulator.generateMessage();
+    //lambda capture which means that the thread's lambda can access local variables from main() by reference
+    std::thread producer([&] {
+        for (int i{0}; i<messageCount; ++i){
+            TelemetryMessage message = simulator.generateMessage();
 
-        if (message.isValid()) {
-            if (!queue.tryPush(message)) {
-                std::cout << "Queue is full. Message was not added."
-                          << std::endl;
+            if (message.isValid()) {
+                if (!queue.waitPush(message)) {
+                    break;
+                }
+
+                std::cout << "Producer queued message " << i+1 << std::endl;
             }
+
+            std::this_thread::sleep_for(
+                std::chrono::milliseconds(100)
+            );
         }
-    }
 
-    std::cout << "Queue contains "
-              << queue.size()
-              << " messages."
-              << std::endl;
+        queue.stop();
+    });
 
-    // tryPop replaces 'message' with the oldest message in the queue.
-    while (queue.tryPop(message)) {
-        message.print();
+    TelemetryMessage output("placeholder", 0, 0.0, 0);
 
-        std::cout << "Messages remaining: "
-                  << queue.size()
-                  << std::endl;
-    }
+    std::thread consumer([&] {
+        while (queue.waitPop(output)) {
+            output.print();
+
+            std::this_thread::sleep_for(
+                std::chrono::milliseconds(300)
+            );
+        }
+
+        std::cout << "Consumer finished processing messages." << std::endl;
+    });
+
+    producer.join();
+    consumer.join();
+
+    std::cout << "Telemetry pipeline finished." << std::endl;
 
     return 0;
 }
