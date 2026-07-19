@@ -140,3 +140,94 @@ TEST(TelemetryQueueTest, StopWakesWaitingConsumer) {
 
     EXPECT_FALSE(popped);
 }
+
+TEST(TelemetryProcessorTest, NewProcessorHasZeroCounts) {
+    TelemetryProcessor processor;
+
+    EXPECT_EQ(processor.getProcessedCount(), 0);
+    EXPECT_EQ(processor.getInvalidCount(), 0);
+    EXPECT_DOUBLE_EQ(processor.getAverageTemp(), 0.0);
+}
+
+TEST(TelemetryProcessorTest, ProcessesValidMessage)
+{
+    TelemetryProcessor processor;
+
+    TelemetryMessage message(
+        "sensor-01",
+        1000,
+        25.0,
+        90
+    );
+
+    processor.process(message);
+
+    EXPECT_EQ(processor.getProcessedCount(), 1);
+    EXPECT_EQ(processor.getInvalidCount(), 0);
+
+    EXPECT_DOUBLE_EQ(
+        processor.getAverageTemp(),
+        25.0
+    );
+
+    EXPECT_DOUBLE_EQ(
+        processor.getMinTemp(),
+        25.0
+    );
+
+    EXPECT_DOUBLE_EQ(
+        processor.getMaxTemp(),
+        25.0
+    );
+}
+
+TEST(TelemetryProcessorTest, CalculatesTemperatureStatistics)
+{
+    TelemetryProcessor processor;
+
+    processor.process(
+        TelemetryMessage("sensor-01", 1000, 20.0, 90)
+    );
+
+    processor.process(
+        TelemetryMessage("sensor-01", 1001, 30.0, 89)
+    );
+
+    processor.process(
+        TelemetryMessage("sensor-01", 1002, 25.0, 88)
+    );
+
+    EXPECT_EQ(processor.getProcessedCount(), 3);
+
+    EXPECT_DOUBLE_EQ(
+        processor.getMinTemp(),
+        20.0
+    );
+
+    EXPECT_DOUBLE_EQ(
+        processor.getMaxTemp(),
+        30.0
+    );
+
+    EXPECT_DOUBLE_EQ(
+        processor.getAverageTemp(),
+        25.0
+    );
+}
+
+TEST(TelemetryProcessorTest, CountsInvalidMessage)
+{
+    TelemetryProcessor processor;
+
+    TelemetryMessage invalidMessage(
+        "sensor-01",
+        1000,
+        25.0,
+        -1
+    );
+
+    processor.process(invalidMessage);
+
+    EXPECT_EQ(processor.getProcessedCount(), 0);
+    EXPECT_EQ(processor.getInvalidCount(), 1);
+}

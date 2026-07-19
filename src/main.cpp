@@ -4,6 +4,7 @@
 
 #include "SensorSimulator.hpp"
 #include "TelemetryQueue.hpp"
+#include "TelemetryProcessor.hpp"
 
 int main()
 {
@@ -11,6 +12,8 @@ int main()
 
     // The queue can store up to 10 messages.
     TelemetryQueue queue(2);
+
+    TelemetryProcessor processor;
 
     constexpr int messageCount{10};
 
@@ -39,11 +42,8 @@ int main()
 
     std::thread consumer([&] {
         while (queue.waitPop(output)) {
+            processor.process(output); //every consumed message is passed into this
             output.print();
-
-            std::this_thread::sleep_for(
-                std::chrono::milliseconds(300)
-            );
         }
 
         std::cout << "Consumer finished processing messages." << std::endl;
@@ -51,6 +51,29 @@ int main()
 
     producer.join();
     consumer.join();
+
+    std::cout << "\nTelemetry Statistics\n";
+    std::cout << "--------------------\n";
+
+    std::cout << "Messages processed: "
+            << processor.getProcessedCount()
+            << '\n';
+
+    std::cout << "Invalid messages: "
+            << processor.getInvalidCount()
+            << '\n';
+
+    std::cout << "Minimum temperature: "
+            << processor.getMinTemp()
+            << " C\n";
+
+    std::cout << "Maximum temperature: "
+            << processor.getMaxTemp()
+            << " C\n";
+
+    std::cout << "Average temperature: "
+            << processor.getAverageTemp()
+            << " C\n";
 
     std::cout << "Telemetry pipeline finished." << std::endl;
 

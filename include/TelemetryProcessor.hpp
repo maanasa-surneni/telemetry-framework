@@ -1,24 +1,28 @@
 #pragma once
 
-#include "TelemetryMessage.hpp"
+#include <cstddef>
 
-#include <vector>
+#include "TelemetryMessage.hpp"
 
 class TelemetryProcessor {
     public:
-        double calculateAverageTemperature(
-            const std::vector<TelemetryMessage>& messages
-        ) const;
+        TelemetryProcessor();
 
-        double findMinimumTemperature(
-            const std::vector<TelemetryMessage>& messages
-        ) const;
+        //this function accepts one telemetry message and updates the statistics
+        void process(const TelemetryMessage& message);
 
-        double findMaximumTemperature(
-            const std::vector<TelemetryMessage>& messages
-        ) const;
+        std::size_t getProcessedCount() const;
+        std::size_t getInvalidCount() const;
 
-        double calculateAverageBattery(
-            const std::vector<TelemetryMessage>& messages
-        ) const;
+        double getAverageTemp() const;
+        double getMinTemp() const;
+        double getMaxTemp() const;
+    
+    private:
+        std::size_t processedCount_;
+        std::size_t invalidCount_;
+
+        double tempSum_;
+        double minTemp_;
+        double maxTemp_;
 };

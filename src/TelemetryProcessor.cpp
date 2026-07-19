@@ -2,73 +2,62 @@
 
 #include <stdexcept>
 
-double TelemetryProcessor::calculateAverageTemperature(
-    const std::vector<TelemetryMessage>& messages
-) const
+TelemetryProcessor::TelemetryProcessor()
+    : processedCount_(0),
+    invalidCount_(0),
+    tempSum_(0.0),
+    minTemp_(0.0),
+    maxTemp_(0.0)
 
 {
-    if (messages.empty()){
-        throw std::invalid_argument("Cannot process an empty message list.");
-    }
 
-    double totalTemperature = 0.0;
-
-    for (const TelemetryMessage& message : messages){
-        totalTemperature += message.getTemperature();
-    }
-
-    return totalTemperature / static_cast<double>(messages.size());
 }
 
-double TelemetryProcessor::findMinimumTemperature(
-    const std::vector<TelemetryMessage>& messages
-) const
-{
-    if (messages.empty()){
-        throw std::invalid_argument("Cannot process an empty message list.");
+void TelemetryProcessor::process(const TelemetryMessage& message) {
+    if (!message.isValid()) {
+        ++invalidCount_;
+        return;
     }
 
-    double minimumTemperature = messages.front().getTemperature();
+    const double temp = message.getTemperature();
 
-    for (const TelemetryMessage& message : messages){
-        if (message.getTemperature() < minimumTemperature){
-            minimumTemperature = message.getTemperature();
+    if (processedCount_ == 0) {
+        minTemp_ = temp;
+        maxTemp_ = temp;
+    } else {
+        if (temp < minTemp_) {
+            minTemp_ = temp;
+        }
+
+        if (temp > maxTemp_) {
+            maxTemp_ = temp;
         }
     }
-    return minimumTemperature;
+
+    tempSum_ += temp;
+    ++processedCount_;
 }
 
-double TelemetryProcessor::findMaximumTemperature(
-    const std::vector<TelemetryMessage>& messages
-) const
-{
-    if (messages.empty()){
-        throw std::invalid_argument("Cannot process an empty message list.");
-    }
-
-    double maximumTemperature = messages.front().getTemperature();
-
-    for (const TelemetryMessage& message : messages){
-        if (message.getTemperature() > maximumTemperature){
-            maximumTemperature = message.getTemperature();
-        }
-    }
-    return maximumTemperature;
+std::size_t TelemetryProcessor::getProcessedCount() const {
+    return processedCount_;
 }
 
-double TelemetryProcessor::calculateAverageBattery(
-    const std::vector<TelemetryMessage>& messages
-) const
-{
-    if (messages.empty()){
-        throw std::invalid_argument("Cannot process an empty message list.");
+std::size_t TelemetryProcessor::getInvalidCount() const {
+    return invalidCount_;
+}
+
+double TelemetryProcessor::getAverageTemp() const {
+    if (processedCount_ == 0) {
+        return 0.0;
     }
 
-    int totalBattery = 0;
+    return tempSum_ / static_cast<double>(processedCount_);
+}
 
-    for (const TelemetryMessage& message : messages){
-        totalBattery += message.getBatteryPercentage();
-    }
+double TelemetryProcessor::getMinTemp() const {
+    return minTemp_;
+}
 
-    return static_cast<double>(totalBattery) / static_cast<double>(messages.size());
+double TelemetryProcessor::getMaxTemp() const {
+    return maxTemp_;
 }
