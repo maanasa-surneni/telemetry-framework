@@ -7,6 +7,7 @@
 #include "TelemetryProcessor.hpp"
 #include "CsvExporter.hpp"
 #include "TelemetryAlert.hpp"
+#include "TelemetryFilter.hpp"
 
 int main()
 {
@@ -19,6 +20,7 @@ int main()
     TelemetryProcessor processor;
     CsvExporter exporter("telemetry.csv");
     TelemetryAlert alertSystem(28.0, 20);
+    TelemetryFilter filter(-40.0, 85.0);
 
     if (!exporter.isOpen()) {
         std::cerr << "Failed to open telemetry.csv" << std::endl;
@@ -83,6 +85,12 @@ int main()
 
     std::thread consumer([&] {
         while (queue.waitPop(output)) {
+            if (!filter.accepts(output)) {
+                std::cout << "Rejected invalid message from " << output.getDeviceId() << std::endl;
+
+                continue; //this is so that it skips through the rest of the loop iteration and messages do not reach the processor, exporter, and alert system
+            }
+
             processor.process(output); //every consumed message is passed into this
             exporter.write(output);
             
@@ -104,88 +112,88 @@ int main()
 
     consumer.join();
 
-    std::cout << "\nTelemetry Statistics\n";
-    std::cout << "--------------------\n";
+    std::cout << "\nTelemetry Statistics" << std::endl;
+    std::cout << "--------------------" << std::endl;
 
     std::cout << "Messages processed: "
             << processor.getProcessedCount()
-            << '\n';
+            << std::endl;
 
     std::cout << "Invalid messages: "
             << processor.getInvalidCount()
-            << '\n';
+            << std::endl;
 
     std::cout << "Minimum temperature: "
             << processor.getMinTemp()
-            << " C\n";
+            << " C" << std::endl;
 
     std::cout << "Maximum temperature: "
             << processor.getMaxTemp()
-            << " C\n";
+            << " C" << std::endl;
 
     std::cout << "Average temperature: "
             << processor.getAverageTemp()
-            << " C\n";
+            << " C" << std::endl;
 
     const DeviceStatistics& sensorOneStats =
     processor.getDeviceStatistics("sensor-01");
 
-    std::cout << "\nsensor-01 Statistics\n";
+    std::cout << "\nsensor-01 Statistics" << std::endl;
     std::cout << "Messages: "
             << sensorOneStats.processedCount
-            << '\n';
+            << std::endl;
 
     std::cout << "Minimum temperature: "
             << sensorOneStats.minTemp
-            << " C\n";
+            << " C" << std::endl;
 
     std::cout << "Maximum temperature: "
             << sensorOneStats.maxTemp
-            << " C\n";
+            << " C" << std::endl;
 
     std::cout << "Average temperature: "
             << processor.getDeviceAverageTemp("sensor-01")
-            << " C\n";
+            << " C" << std::endl;
 
     const DeviceStatistics& sensorTwoStats =
     processor.getDeviceStatistics("sensor-02");
 
-    std::cout << "\nsensor-02 Statistics\n";
+    std::cout << "\nsensor-02 Statistics" << std::endl;
     std::cout << "Messages: "
             << sensorTwoStats.processedCount
-            << '\n';
+            << std::endl;
 
     std::cout << "Minimum temperature: "
             << sensorTwoStats.minTemp
-            << " C\n";
+            << " C" << std::endl;
 
     std::cout << "Maximum temperature: "
             << sensorTwoStats.maxTemp
-            << " C\n";
+            << " C" << std::endl;
 
     std::cout << "Average temperature: "
             << processor.getDeviceAverageTemp("sensor-02")
-            << " C\n";
+            << " C" << std::endl;
 
     const DeviceStatistics& sensorThreeStats =
     processor.getDeviceStatistics("sensor-03");
 
-    std::cout << "\nsensor-03 Statistics\n";
+    std::cout << "\nsensor-03 Statistics" << std::endl;
     std::cout << "Messages: "
             << sensorThreeStats.processedCount
-            << '\n';
+            << std::endl;
 
     std::cout << "Minimum temperature: "
             << sensorThreeStats.minTemp
-            << " C\n";
+            << " C" << std::endl;
 
     std::cout << "Maximum temperature: "
             << sensorThreeStats.maxTemp
-            << " C\n";
+            << " C" << std::endl;
 
     std::cout << "Average temperature: "
             << processor.getDeviceAverageTemp("sensor-03")
-            << " C\n";
+            << " C" << std::endl;
 
     std::cout << "Telemetry pipeline finished." << std::endl;
 

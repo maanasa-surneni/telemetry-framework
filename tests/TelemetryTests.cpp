@@ -3,6 +3,7 @@
 #include "TelemetryQueue.hpp"
 #include "CsvExporter.hpp"
 #include "TelemetryAlert.hpp"
+#include "TelemetryFilter.hpp"
 
 #include <gtest/gtest.h>
 #include <chrono>
@@ -477,4 +478,60 @@ TEST(TelemetryPipelineTest, ProcessesLargeNumberOfMessages)
         processor.getProcessedCount(),
         expectedCount
     );
+}
+
+TEST(TelemetryFilterTest, AcceptsValidMessage)
+{
+    TelemetryFilter filter(-40.0, 85.0);
+
+    TelemetryMessage message(
+        "sensor-01",
+        1000,
+        25.0,
+        80
+    );
+
+    EXPECT_TRUE(filter.accepts(message));
+}
+
+TEST(TelemetryFilterTest, RejectsHighTemperature)
+{
+    TelemetryFilter filter(-40.0, 85.0);
+
+    TelemetryMessage message(
+        "sensor-01",
+        1000,
+        100.0,
+        80
+    );
+
+    EXPECT_FALSE(filter.accepts(message));
+}
+
+TEST(TelemetryFilterTest, RejectsInvalidBattery)
+{
+    TelemetryFilter filter(-40.0, 85.0);
+
+    TelemetryMessage message(
+        "sensor-01",
+        1000,
+        25.0,
+        120
+    );
+
+    EXPECT_FALSE(filter.accepts(message));
+}
+
+TEST(TelemetryFilterTest, RejectsInvalidTimestamp)
+{
+    TelemetryFilter filter(-40.0, 85.0);
+
+    TelemetryMessage message(
+        "sensor-01",
+        0,
+        25.0,
+        80
+    );
+
+    EXPECT_FALSE(filter.accepts(message));
 }
