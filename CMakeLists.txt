@@ -29,12 +29,12 @@ target_include_directories(
 )
 
 add_executable(
-    telemetry
-    src/main.cpp
+    telemetry_benchmark
+    benchmarks/TelemetryBenchmark.cpp
 )
 
 target_link_libraries(
-    telemetry
+    telemetry_benchmark
     PRIVATE
     telemetry_core
 )
